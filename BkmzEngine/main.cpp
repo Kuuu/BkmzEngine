@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include "MyApp.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -32,6 +33,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	// Register the window class.
 	const wchar_t CLASS_NAME[] = L"Sample Window Class";
 
+	const UINT windowWidth = 800;
+	const UINT windowHeight = 600;
+
 	WNDCLASS wc = { };
 
 	wc.lpfnWndProc = WindowProc;
@@ -47,7 +51,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         WS_OVERLAPPEDWINDOW,            // Window style
 
         // Size and position
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight,
 
         NULL,       // Parent window    
         NULL,       // Menu
@@ -59,6 +63,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     {
         return 0;
     }
+
+    MyApp app(hwnd, windowWidth, windowHeight);
+
+    app.Initialize();
 
 	ShowWindow(hwnd, nCmdShow);
 
@@ -73,6 +81,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         }
 
 		// Run game code here
+        app.Draw();
     }
 
 	return 0;

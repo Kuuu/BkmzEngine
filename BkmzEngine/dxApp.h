@@ -1,0 +1,73 @@
+#pragma once
+#include <d3d12.h>
+#include <wrl.h>
+#include <dxgi1_6.h>
+
+using Microsoft::WRL::ComPtr;
+
+class dxApp
+{
+public:
+	dxApp(HWND hwnd, UINT width, UINT height) : hwnd(hwnd), width(width), height(height) {}
+
+	~dxApp()
+	{
+		if (device != nullptr)
+		{
+			FlushCommandQueue();
+		}
+	}
+
+	void Initialize();
+	virtual void Draw() = 0;
+	float AspectRatio() const;
+
+	ID3D12Resource* CurrentBackBuffer() const
+	{
+		return swapChainBuffer[currBackBuffer].Get();
+	}
+
+protected:
+	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
+	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
+	void FlushCommandQueue();
+
+protected:
+	HWND hwnd;
+
+	UINT width;
+	UINT height;
+
+	UINT64 currentFence = 0;
+
+	UINT rtvDescriptorSize = 0;
+	UINT dsvDescriptorSize = 0;
+	UINT cbvSrvUavDescriptorSize = 0;
+
+	DXGI_FORMAT backBufferFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_FORMAT depthStencilFormat = DXGI_FORMAT_D16_UNORM;
+	static constexpr UINT swapChainBufferCount = 2;
+	int currBackBuffer = 0;
+	D3D12_VIEWPORT viewport;
+
+	FLOAT clearColor[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
+
+protected:
+	ComPtr<IDXGIFactory4> dxgiFactory;
+	ComPtr<ID3D12Device> device;
+	ComPtr<ID3D12Fence> fence;
+
+	ComPtr<ID3D12CommandQueue> commandQueue;
+	ComPtr<ID3D12CommandAllocator> commandAlloc;
+	ComPtr<ID3D12GraphicsCommandList> commandList;
+
+	ComPtr<IDXGISwapChain> swapChain;
+
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	ComPtr<ID3D12DescriptorHeap> dsvHeap;
+
+	ComPtr<ID3D12Resource> swapChainBuffer[swapChainBufferCount];
+	ComPtr<ID3D12Resource> depthStencilBuffer;
+
+
+};
