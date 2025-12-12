@@ -80,7 +80,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             DispatchMessage(&msg);
         }
 
-		// Run game code here
+        app.timer.Tick();
+
+        app.CalculateFrameStats();
         app.Draw();
     }
 

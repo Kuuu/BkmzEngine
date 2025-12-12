@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dxApp.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="String.cpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="dxApp.h" />
     <ClInclude Include="DXErrors.h" />
+    <ClInclude Include="GameTimer.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="String.h" />
   </ItemGroup>

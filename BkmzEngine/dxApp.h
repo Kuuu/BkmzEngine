@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
+#include "GameTimer.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -27,6 +28,8 @@ public:
 		return swapChainBuffer[currBackBuffer].Get();
 	}
 
+	void CalculateFrameStats();
+
 private:
 	void EnableDebugLayer();
 	void CreateDXGIFactory();
@@ -45,6 +48,9 @@ protected:
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
 	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;
 	void FlushCommandQueue();
+
+public:
+	GameTimer timer;
 
 protected:
 	HWND hwnd;
