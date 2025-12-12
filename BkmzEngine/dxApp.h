@@ -27,6 +27,20 @@ public:
 		return swapChainBuffer[currBackBuffer].Get();
 	}
 
+private:
+	void EnableDebugLayer();
+	void CreateDXGIFactory();
+	void CreateDevice();
+	void CreateFence();
+	void GetDescriptorSizes();
+	void CreateCommandObjects();
+	void CreateSwapChain();
+	void CreateDescriptorHeaps();
+	void CreateRTV();
+	void CreateDSV();
+	void SetViewport();
+	void ExecuteCommands();
+
 protected:
 	D3D12_CPU_DESCRIPTOR_HANDLE CurrentBackBufferView() const;
 	D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilView() const;

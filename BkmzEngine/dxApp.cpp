@@ -4,17 +4,85 @@
 
 void dxApp::Initialize()
 {
-	// Enable debug layer
+	EnableDebugLayer();
+	CreateDXGIFactory();
+	CreateDevice();
+	CreateFence();
+	GetDescriptorSizes();
+	CreateCommandObjects();
+	CreateSwapChain();
+	CreateDescriptorHeaps();
+	CreateRTV();
+	CreateDSV();
+	SetViewport();
+
+	ExecuteCommands();
+	FlushCommandQueue();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE dxApp::CurrentBackBufferView() const
+{
+	// CD3DX12 constructor to offset to the RTV of the current back buffer.
+	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
+		rtvHeap->GetCPUDescriptorHandleForHeapStart(), // handle start
+		currBackBuffer, // index to offset
+		rtvDescriptorSize // byte size of descriptor
+	);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE dxApp::DepthStencilView() const
+{
+	return dsvHeap->GetCPUDescriptorHandleForHeapStart();
+}
+
+void dxApp::FlushCommandQueue()
+{
+	// Advance the fence value to mark commands up to this fence point.
+	currentFence++;
+
+	// Add an instruction to the command queue to set a new fence point.
+	// Because we are on the GPU timeline, the new fence point wonft be
+	// set until the GPU finishes processing all the commands prior to
+	// this Signal().
+	DX_CALL(commandQueue->Signal(fence.Get(), currentFence));
+
+	// Wait until the GPU has completed commands up to this fence point.
+	if (fence->GetCompletedValue() < currentFence)
+	{
+		HANDLE eventHandle = CreateEventEx(nullptr, NULL, false, EVENT_ALL_ACCESS);
+
+		// Fire event when GPU hits current fence.
+		DX_CALL(fence->SetEventOnCompletion(currentFence, eventHandle));
+
+		// Wait until the GPU hits current fence event is fired.
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
+	}
+}
+
+
+float dxApp::AspectRatio() const
+{
+	return static_cast<float>(width) / height;
+}
+
+void dxApp::EnableDebugLayer()
+{
 #if defined(DEBUG) || defined(_DEBUG)
 	ComPtr<ID3D12Debug> debugController;
 	DX_CALL(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 	debugController->EnableDebugLayer();
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
+}
 
-	// Create DXGI factory and D3D12 device
+void dxApp::CreateDXGIFactory()
+{
 	DX_CALL(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&dxgiFactory)));
+}
 
+void dxApp::CreateDevice()
+{
 	HRESULT hardwareResult = D3D12CreateDevice(
 		nullptr, // default adapter
 		D3D_FEATURE_LEVEL_11_0,
@@ -31,28 +99,34 @@ void dxApp::Initialize()
 			IID_PPV_ARGS(&device))
 		);
 	}
+}
 
-	// Create a fence
+void dxApp::CreateFence()
+{
 	DX_CALL(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+}
 
-	// Get descriptor sizes
+void dxApp::GetDescriptorSizes()
+{
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	dsvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	cbvSrvUavDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+}
 
-	// Create command queue, command allocator, and command list
+void dxApp::CreateCommandObjects()
+{
 	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 	DX_CALL(device->CreateCommandQueue(
-		&queueDesc, 
+		&queueDesc,
 		IID_PPV_ARGS(&commandQueue))
 	);
 
 	DX_CALL(device->CreateCommandAllocator(
-			D3D12_COMMAND_LIST_TYPE_DIRECT,
-			IID_PPV_ARGS(commandAlloc.GetAddressOf()))
+		D3D12_COMMAND_LIST_TYPE_DIRECT,
+		IID_PPV_ARGS(commandAlloc.GetAddressOf()))
 	);
 
 	DX_CALL(device->CreateCommandList(
@@ -65,9 +139,10 @@ void dxApp::Initialize()
 
 	// Close the command list as it is created in the recording state.
 	commandList->Close();
+}
 
-
-	// Create swap chain
+void dxApp::CreateSwapChain()
+{
 	swapChain.Reset();
 	DXGI_SWAP_CHAIN_DESC sd;
 	sd.BufferDesc.Width = width;
@@ -91,8 +166,10 @@ void dxApp::Initialize()
 		&sd,
 		swapChain.GetAddressOf())
 	);
+}
 
-	// Create descriptor heaps for render target views (RTVs) and depth stencil views (DSVs)
+void dxApp::CreateDescriptorHeaps()
+{
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 	rtvHeapDesc.NumDescriptors = swapChainBufferCount;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -100,7 +177,7 @@ void dxApp::Initialize()
 	rtvHeapDesc.NodeMask = 0;
 
 	DX_CALL(device->CreateDescriptorHeap(
-		&rtvHeapDesc, 
+		&rtvHeapDesc,
 		IID_PPV_ARGS(rtvHeap.GetAddressOf()))
 	);
 
@@ -111,12 +188,13 @@ void dxApp::Initialize()
 	dsvHeapDesc.NodeMask = 0;
 
 	DX_CALL(device->CreateDescriptorHeap(
-		&dsvHeapDesc, 
+		&dsvHeapDesc,
 		IID_PPV_ARGS(dsvHeap.GetAddressOf()))
 	);
+}
 
-	
-	// Create Render Target Views
+void dxApp::CreateRTV()
+{
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHeapHandle(
 		rtvHeap->GetCPUDescriptorHandleForHeapStart()
 	);
@@ -135,8 +213,10 @@ void dxApp::Initialize()
 		// Next entry in heap.
 		rtvHeapHandle.Offset(1, rtvDescriptorSize);
 	}
+}
 
-
+void dxApp::CreateDSV()
+{
 	// Create the depth/stencil buffer and view.
 	D3D12_RESOURCE_DESC depthStencilDesc;
 	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -185,7 +265,10 @@ void dxApp::Initialize()
 		1,
 		&barrier
 	);
+}
 
+void dxApp::SetViewport()
+{
 	// Set viewport
 	viewport.TopLeftX = 0.0f;
 	viewport.TopLeftY = 0.0f;
@@ -194,56 +277,10 @@ void dxApp::Initialize()
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	commandList->RSSetViewports(1, &viewport);
+}
 
-	// Add the command list to the queue for execution.
+void dxApp::ExecuteCommands()
+{
 	ID3D12CommandList *cmdsLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	FlushCommandQueue();
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE dxApp::CurrentBackBufferView() const
-{
-	// CD3DX12 constructor to offset to the RTV of the current back buffer.
-	return CD3DX12_CPU_DESCRIPTOR_HANDLE(
-		rtvHeap->GetCPUDescriptorHandleForHeapStart(), // handle start
-		currBackBuffer, // index to offset
-		rtvDescriptorSize // byte size of descriptor
-	);
-}
-
-D3D12_CPU_DESCRIPTOR_HANDLE dxApp::DepthStencilView() const
-{
-	return dsvHeap->GetCPUDescriptorHandleForHeapStart();
-}
-
-void dxApp::FlushCommandQueue()
-{
-	// Advance the fence value to mark commands up to this fence point.
-	currentFence++;
-
-	// Add an instruction to the command queue to set a new fence point.
-	// Because we are on the GPU timeline, the new fence point wonft be
-	// set until the GPU finishes processing all the commands prior to
-	// this Signal().
-	DX_CALL(commandQueue->Signal(fence.Get(), currentFence));
-
-	// Wait until the GPU has completed commands up to this fence point.
-	if (fence->GetCompletedValue() < currentFence)
-	{
-		HANDLE eventHandle = CreateEventEx(nullptr, NULL, false, EVENT_ALL_ACCESS);
-
-		// Fire event when GPU hits current fence.
-		DX_CALL(fence->SetEventOnCompletion(currentFence, eventHandle));
-
-		// Wait until the GPU hits current fence event is fired.
-		WaitForSingleObject(eventHandle, INFINITE);
-		CloseHandle(eventHandle);
-	}
-}
-
-
-float dxApp::AspectRatio() const
-{
-	return static_cast<float>(width) / height;
 }
