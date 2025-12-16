@@ -1,7 +1,7 @@
 #include "dxApp.h"
 #include "DXErrors.h"
 #include "d3dx12.h"
-#include <string>
+#include <d3dcompiler.h>
 
 void dxApp::Initialize()
 {
@@ -17,8 +17,8 @@ void dxApp::Initialize()
 	CreateDSV();
 	SetViewport();
 
-	ExecuteCommands();
-	FlushCommandQueue();
+	//ExecuteCommands();
+	//FlushCommandQueue();
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE dxApp::CurrentBackBufferView() const
@@ -283,6 +283,7 @@ void dxApp::CreateDSV()
 		DepthStencilView()
 	);
 
+	
 	// Transition the resource from its initial state to be used as a depth buffer.
 	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		depthStencilBuffer.Get(),
@@ -290,10 +291,16 @@ void dxApp::CreateDSV()
 		D3D12_RESOURCE_STATE_DEPTH_WRITE
 	);
 
-	commandList->ResourceBarrier(
-		1,
-		&barrier
-	);
+	commandAlloc->Reset();
+	commandList->Reset(commandAlloc.Get(), nullptr);
+
+	// Transition
+	commandList->ResourceBarrier(1, &barrier);
+
+	commandList->Close();
+	ID3D12CommandList *cmds[] = { commandList.Get() };
+	commandQueue->ExecuteCommandLists(1, cmds);
+	FlushCommandQueue();
 }
 
 void dxApp::SetViewport()
@@ -305,11 +312,107 @@ void dxApp::SetViewport()
 	viewport.Height = static_cast<float>(height);
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
-	commandList->RSSetViewports(1, &viewport);
+	
+	scissorRect.left = 0;
+	scissorRect.top = 0;
+	scissorRect.right = width;
+	scissorRect.bottom = height;
 }
 
 void dxApp::ExecuteCommands()
 {
 	ID3D12CommandList *cmdsLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+}
+
+Microsoft::WRL::ComPtr<ID3D12Resource> dxApp::CreateDefaultBuffer(
+	const void *initData,
+	UINT64 byteSize,
+	Microsoft::WRL::ComPtr<ID3D12Resource>&uploadBuffer)
+{
+	ComPtr<ID3D12Resource> defaultBuffer;
+
+	// Create the actual default buffer resource.
+	D3D12_HEAP_PROPERTIES heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+	D3D12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
+	DX_CALL(device->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(defaultBuffer.GetAddressOf()))
+	);
+
+	// In order to copy CPU memory data into our default buffer, we need
+	// to create an intermediate upload heap.
+	heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(byteSize);
+	DX_CALL(device->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(uploadBuffer.GetAddressOf()))
+	);
+
+	// Describe the data we want to copy into the default buffer.
+	D3D12_SUBRESOURCE_DATA subResourceData = {};
+	subResourceData.pData = initData;
+	subResourceData.RowPitch = byteSize;
+	subResourceData.SlicePitch = subResourceData.RowPitch;
+
+	// Schedule to copy the data to the default buffer resource.
+	// At a high level, the helper function UpdateSubresources
+	// will copy the CPU memory into the intermediate upload heap.
+	// Then, using ID3D12CommandList::CopySubresourceRegion,
+	// the intermediate upload heap data will be copied to mBuffer.
+	auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+		D3D12_RESOURCE_STATE_COMMON,
+		D3D12_RESOURCE_STATE_COPY_DEST);
+	commandList->ResourceBarrier(1,
+		&barrier
+	);
+
+	UpdateSubresources<1>(commandList.Get(),
+		defaultBuffer.Get(), uploadBuffer.Get(),
+		0, 0, 1, &subResourceData);
+
+	barrier = CD3DX12_RESOURCE_BARRIER::Transition(defaultBuffer.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_GENERIC_READ);
+	commandList->ResourceBarrier(1,
+		&barrier
+	);
+
+	// Note: uploadBuffer has to be kept alive after the above function
+	// calls because the command list has not been executed yet that
+	// performs the actual copy.
+	// The caller can Release the uploadBuffer after it knows the copy
+	// has been executed.
+	return defaultBuffer;
+}
+
+UINT dxApp::CalcConstantBufferByteSize(UINT byteSize)
+{
+	// Constant buffers must be a multiple of the minimum hardware
+	// allocation size (usually 256 bytes). So round up to nearest
+	// multiple of 256. We do this by adding 255 and then masking off
+	// the lower 2 bytes which store all bits < 256.
+	// Example: Suppose byteSize = 300.
+	// (300 + 255) & ~255
+	// 555 & ~255
+	// 0x022B & ~0x00ff
+	// 0x022B & 0xff00
+	// 0x0200
+	// 512
+	return (byteSize + 255) & ~255;
+}
+
+ComPtr<ID3DBlob> dxApp::LoadShader(const std::wstring &filename)
+{
+	ComPtr<ID3DBlob> blob;
+	DX_CALL(D3DReadFileToBlob(filename.c_str(), &blob));
+	return blob;
 }

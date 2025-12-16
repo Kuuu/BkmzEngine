@@ -83,6 +83,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         app.timer.Tick();
 
         app.CalculateFrameStats();
+        app.Update();
         app.Draw();
     }
 
