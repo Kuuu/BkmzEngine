@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="dxApp.h" />
     <ClInclude Include="DXErrors.h" />
+    <ClInclude Include="FrameTimer.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="String.h" />

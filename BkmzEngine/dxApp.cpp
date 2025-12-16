@@ -67,17 +67,15 @@ float dxApp::AspectRatio() const
 	return static_cast<float>(width) / height;
 }
 
-void dxApp::CalculateFrameStats()
+void dxApp::CalculateFrameStats(float timerTotalTime)
 {
 	// Code computes the average frames per second, and also the
 	// average time it takes to render one frame. These stats
 	// are appended to the window caption bar.
-	static int frameCnt = 0;
-	static float timeElapsed = 0.0f;
 	frameCnt++;
 
 	// Compute averages over one second period.
-	if ((timer.TotalTime() - timeElapsed) >= 1.0f)
+	if ((timerTotalTime - timeElapsed) >= 1.0f)
 	{
 		float fps = (float)frameCnt; // fps = frameCnt / 1
 		float mspf = 1000.0f / fps;

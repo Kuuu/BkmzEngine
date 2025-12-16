@@ -70,6 +70,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 	ShowWindow(hwnd, nCmdShow);
 
+    FrameTimer performanceTimer;
+
     MSG msg = { };
 
     while (msg.message != WM_QUIT)
@@ -80,10 +82,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             DispatchMessage(&msg);
         }
 
-        app.timer.Tick();
+        float deltaTime = app.timer.Mark();
 
-        app.CalculateFrameStats();
-        app.Update();
+
+        app.CalculateFrameStats(performanceTimer.Peek());
+        app.Update(deltaTime);
         app.Draw();
     }
 

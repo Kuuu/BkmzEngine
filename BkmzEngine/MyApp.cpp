@@ -23,28 +23,45 @@ void MyApp::Initialize()
 
 	commandAlloc->Reset();
 	commandList->Reset(commandAlloc.Get(), nullptr);
-
+	
 	/*
 	Vertex verts[vertexCount] = {
-		{{0.2f, 0.2f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{0.5f, 0.7f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{0.8f, 0.2f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
 	};
 	*/
-	
 
-	
 	Vertex verts[vertexCount] = {
-		{{200.0f, 500.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{500.0f, 200.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{700.0f, 500.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+		{{0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}},
+
+		{{-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 1.0f, 1.0f}},
+		{{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 1.0f, 1.0f}},
+		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f, 0.0f, 1.0f}},
 	};
 	
 	
 
 	const UINT64 vbByteSize = vertexCount * sizeof(Vertex);
 
-	std::uint16_t indexes[indexCount] = {0, 1, 2};
+	std::uint16_t indexes[indexCount] = {
+		2, 3, 6,
+		6, 3, 7,
+		1, 0, 5,
+		5, 0, 4,
+		0, 2, 4,
+		4, 2, 6,
+		3, 1, 7,
+		7, 1, 5,
+		0, 1, 2,
+		2, 1, 3,
+		6, 7, 4,
+		4, 7, 5
+	};
 
 	const UINT64 ibByteSize = indexCount * sizeof(std::uint16_t);
 
@@ -186,22 +203,39 @@ void MyApp::CreateInputLayout()
 	
 }
 
-void MyApp::Update()
+void MyApp::Update(float deltaTime)
 {
 	using namespace dx;
 
-	XMMATRIX world = XMMatrixIdentity();
-	XMMATRIX view = XMMatrixIdentity();
+	rotationY += deltaTime * 0.5f;
 
+	XMMATRIX translation = XMMatrixTranslation(0, 0, 3.0f);
+	XMMATRIX rotationYMatrix = XMMatrixRotationY(rotationY);
+	XMMATRIX rotationXMatrix = XMMatrixRotationX(-(XM_PIDIV4)/1.5f);
+
+	XMMATRIX rotation = rotationYMatrix * rotationXMatrix;
+
+	XMMATRIX world = rotation * translation; // local space to world space
+	//XMMATRIX view = XMMatrixIdentity(); // world space to camera space (move everything so camera is at 0,0,0 here)
+
+	XMVECTOR pos = XMVectorSet(0.0f, 0.0f, -2.0f, 1.0f);
+	XMVECTOR target = XMVectorZero();
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+
+	/*
 	XMMATRIX proj = XMMatrixOrthographicOffCenterLH(
 		0.0f, static_cast<float>(width),   // left, right
 		static_cast<float>(height), 0.0f,  // bottom, top (flip Y)
 		0.0f, 1.0f                         // near, far
 	);
+	*/
+
+	XMMATRIX perspProj = XMMatrixPerspectiveFovLH(XM_PIDIV4, AspectRatio(), 0.1f, 1000.0f);
 
 
 	
-	XMMATRIX worldViewProj = world * view * proj;
+	XMMATRIX worldViewProj = world * view * perspProj;
 
 	ObjectConstants objConstants;
 	XMStoreFloat4x4(&objConstants.worldViewProj, XMMatrixTranspose(worldViewProj));

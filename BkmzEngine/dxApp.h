@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 #include <dxgi1_6.h>
-#include "GameTimer.h"
+#include "FrameTimer.h"
 #include <DirectXMath.h>
 #include <string>
 
@@ -28,7 +28,7 @@ public:
 	}
 
 	virtual void Initialize();
-	virtual void Update() = 0;
+	virtual void Update(float deltaTime) = 0;
 	virtual void Draw() = 0;
 	float AspectRatio() const;
 
@@ -37,7 +37,7 @@ public:
 		return swapChainBuffer[currBackBuffer].Get();
 	}
 
-	void CalculateFrameStats();
+	void CalculateFrameStats(float timerTotalTime);
 
 	static inline DirectX::XMFLOAT4X4 Identity4x4()
 	{
@@ -48,6 +48,9 @@ public:
 	}
 
 	UINT CalcConstantBufferByteSize(UINT byteSize);
+
+public:
+	FrameTimer timer;
 
 private:
 	void EnableDebugLayer();
@@ -76,9 +79,6 @@ protected:
 
 	ComPtr<ID3DBlob> LoadShader(const std::wstring &filename);
 
-public:
-	GameTimer timer;
-
 protected:
 	HWND hwnd;
 
@@ -101,7 +101,7 @@ protected:
 	D3D12_VIEWPORT viewport;
 	D3D12_RECT scissorRect;
 
-	FLOAT clearColor[4] = { 0.0f, 0.5f, 0.5f, 1.0f };
+	FLOAT clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 protected:
 	ComPtr<IDXGIFactory4> dxgiFactory;
@@ -132,4 +132,8 @@ protected:
 	ComPtr<ID3D12RootSignature> rootSignature;
 
 	ComPtr<ID3D12PipelineState> PSO;
+
+private:
+	int frameCnt = 0;
+	float timeElapsed = 0.0f;
 };
