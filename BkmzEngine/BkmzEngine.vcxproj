@@ -135,6 +135,7 @@
     <ClCompile Include="String.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cube.h" />
     <ClInclude Include="dxApp.h" />
     <ClInclude Include="DXErrors.h" />
     <ClInclude Include="FrameTimer.h" />

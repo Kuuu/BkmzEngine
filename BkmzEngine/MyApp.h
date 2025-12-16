@@ -1,6 +1,6 @@
 #pragma once
 #include "dxApp.h"
-#include "Mesh.h"
+#include "Cube.h"
 #include "Material.h"
 #include <vector>
 
@@ -22,5 +22,5 @@ private:
 	float rotationY = 0.0f;
 
 	Material defaultMaterial;
-	std::vector<Mesh<Material::Vertex>> cubes;
+	std::vector<Cube> cubes;
 };
