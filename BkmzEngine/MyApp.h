@@ -1,5 +1,8 @@
 #pragma once
 #include "dxApp.h"
+#include "Mesh.h"
+#include "Material.h"
+#include <vector>
 
 class MyApp : public dxApp
 {
@@ -16,7 +19,8 @@ private:
 private:
 	static constexpr int vertexCount = 8;
 	static constexpr int indexCount = 6*6;
-	D3D12_VERTEX_BUFFER_VIEW vbv;
-	D3D12_INDEX_BUFFER_VIEW ibv;
 	float rotationY = 0.0f;
+
+	Material defaultMaterial;
+	std::vector<Mesh<Material::Vertex>> cubes;
 };

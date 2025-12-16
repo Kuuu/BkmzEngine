@@ -139,8 +139,11 @@
     <ClInclude Include="DXErrors.h" />
     <ClInclude Include="FrameTimer.h" />
     <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="Mesh.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
