@@ -5,6 +5,7 @@
 #include "FrameTimer.h"
 #include <DirectXMath.h>
 #include <string>
+#include <functional>
 
 using Microsoft::WRL::ComPtr;
 
@@ -23,7 +24,7 @@ public:
 
 	virtual void Initialize();
 	virtual void Update(float deltaTime) = 0;
-	virtual void Draw() = 0;
+	void Draw();
 	float AspectRatio() const;
 
 	ID3D12Resource* CurrentBackBuffer() const
@@ -79,6 +80,8 @@ protected:
 	D3D12_RECT scissorRect;
 
 	FLOAT clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	std::function<void(void)> customDraw;
 
 protected:
 	ComPtr<IDXGIFactory4> dxgiFactory;

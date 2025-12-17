@@ -1,14 +1,14 @@
 #pragma once
 #include "Mesh.h"
-#include "Material.h"
+#include "DefaultMaterial.h"
 #include "d3d12.h"
 
-class Cube : public Mesh<Material::Vertex>
+class Cube : public Mesh<DefaultMaterial::Vertex>
 {
 public:
-	Cube(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)
+	Cube(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, Material* mat)
 	{
-		std::vector<Material::Vertex> verts = {
+		std::vector<DefaultMaterial::Vertex> verts = {
 		{{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
 		{{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
 		{{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}},
@@ -38,5 +38,7 @@ public:
 		SetVertices(verts);
 		SetIndexes(indexes);
 		InitBuffers(device, commandList);
+
+		mat->objectCount += 1;
 	}
 };

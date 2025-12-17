@@ -26,8 +26,6 @@ public:
 	UINT64 vbByteSize;
 	UINT64 ibByteSize;
 
-	DirectX::XMVECTOR position = { 0 };
-
 	//int cbufferIndex = 0;
 
 public:
@@ -42,6 +40,11 @@ public:
 	{
 		indexes = input;
 		ibByteSize = indexes.size() * sizeof(std::uint16_t);
+	}
+
+	int GetIndexCount()
+	{
+		return indexes.size();
 	}
 
 	void InitBuffers(ID3D12Device* device, ID3D12GraphicsCommandList* commandList)

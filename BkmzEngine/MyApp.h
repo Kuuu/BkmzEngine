@@ -1,7 +1,8 @@
 #pragma once
 #include "dxApp.h"
-#include "Cube.h"
-#include "Material.h"
+#include "Mesh.h"
+#include "DefaultMaterial.h"
+#include "GameObject.h"
 #include <vector>
 
 class MyApp : public dxApp
@@ -10,17 +11,23 @@ public:
 	MyApp(HWND hwnd, UINT width, UINT height) : dxApp(hwnd, width, height) {}
 	
 	void Update(float deltaTime) override;
-	void Draw() override;
+
+private:
+	void CustomDraw();
+	void DrawWithMaterial(const std::vector<GameObject> &objects, Material *material);
+
+public:
 	void Initialize() override;
 
 private:
-	void CreateInputLayout();
+	void CreateMaterials();
+	void CreateObjects();
 
 private:
 	static constexpr int vertexCount = 8;
 	static constexpr int indexCount = 6*6;
 	float rotationY = 0.0f;
 
-	Material defaultMaterial;
-	std::vector<Cube> cubes;
+	DefaultMaterial defaultMaterial;
+	std::vector<GameObject> gameObjects;
 };

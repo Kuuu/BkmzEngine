@@ -17,17 +17,6 @@ public:
 		}
 	}
 
-	struct Vertex
-	{
-		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT4 Color;
-	};
-
-	struct ObjectConstants
-	{
-		DirectX::XMFLOAT4X4 worldViewProj;
-	};
-
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout;
 
@@ -38,7 +27,7 @@ public:
 	UINT cbufferObjectByteSize = 0;
 	UINT8 *cbufferMappedData = nullptr;
 
-	const int objectCount = 2;
+	int objectCount = 0;
 
 	ComPtr<ID3DBlob> LoadShader(const std::wstring &filename)
 	{
@@ -48,9 +37,12 @@ public:
 	}
 
 
-	void CreatePSO(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat, UINT cbvSrvUavDescriptorSize)
+
+protected:
+
+	void CreatePSO(ID3D12Device* device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat, UINT cbvSrvUavDescriptorSize, UINT constantsByteSize)
 	{
-		cbufferObjectByteSize = Utils::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+		cbufferObjectByteSize = Utils::CalcConstantBufferByteSize(constantsByteSize);
 
 		CD3DX12_HEAP_PROPERTIES heapProps(D3D12_HEAP_TYPE_UPLOAD);
 		auto cbDesc = CD3DX12_RESOURCE_DESC::Buffer(cbufferObjectByteSize * objectCount);
@@ -164,4 +156,7 @@ public:
 		ComPtr<ID3D12PipelineState> mPSO;
 		DX_CALL(device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&PSO)));
 	}
+
+public:
+	virtual void CreatePSO(ID3D12Device *device, DXGI_FORMAT backBufferFormat, DXGI_FORMAT depthStencilFormat, UINT cbvSrvUavDescriptorSize) = 0;
 };

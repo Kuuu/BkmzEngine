@@ -136,14 +136,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cube.h" />
+    <ClInclude Include="DefaultMaterial.h" />
     <ClInclude Include="dxApp.h" />
     <ClInclude Include="DXErrors.h" />
     <ClInclude Include="FrameTimer.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="String.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
